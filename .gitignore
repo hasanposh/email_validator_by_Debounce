@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# environment variables (CRITICAL)
+.env
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# optional
+coverage/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/

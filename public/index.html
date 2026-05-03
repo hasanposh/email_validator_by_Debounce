@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Email Checker</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    textarea { width: 400px; height: 150px; }
+    table { border-collapse: collapse; margin-top: 20px; }
+    td, th { border: 1px solid #ccc; padding: 8px; }
+    th { background: #eee; }
+    .invalid { color: red; }
+  </style>
+</head>
+<body>
+
+<h2>Bulk Email Checker</h2>
+
+<textarea id="emails" placeholder="Paste emails (one per line)"></textarea><br><br>
+
+<button onclick="checkEmails()">Check Emails</button>
+<button onclick="copyForExcel()">📋 Copy for Excel</button>
+<button onclick="downloadCSV()">Download CSV</button>
+<button onclick="downloadJSON()">Download JSON</button>
+
+<h3>Invalid Emails</h3>
+<div id="invalid"></div>
+
+<table id="table">
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Result</th>
+      <th>Reason</th>
+      <th>Code</th>
+      <th>Free</th>
+      <th>Role</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+let latestResults = [];
+
+async function checkEmails() {
+  const emails = document.getElementById("emails").value;
+
+  const res = await fetch("/bulk-check", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ emails })
+  });
+
+  const data = await res.json();
+
+  latestResults = data.results;
+
+  renderTable(data.results);
+  showInvalid(data.invalidEmails);
+}
+
+// render table
+function renderTable(data) {
+  const tbody = document.querySelector("#table tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(item => {
+    const d = item.debounce;
+
+    const row = `
+      <tr>
+        <td>${d.email}</td>
+        <td>${d.result}</td>
+        <td>${d.reason}</td>
+        <td>${d.code}</td>
+        <td>${d.free_email}</td>
+        <td>${d.role}</td>
+      </tr>
+    `;
+
+    tbody.innerHTML += row;
+  });
+}
+
+// show invalid
+function showInvalid(invalids) {
+  const div = document.getElementById("invalid");
+  div.innerHTML = "";
+
+  invalids.forEach(e => {
+    div.innerHTML += `<div class="invalid">${e}</div>`;
+  });
+}
+
+// 🔥 COPY FOR EXCEL (MAIN FEATURE)
+function copyForExcel() {
+  if (!latestResults.length) {
+    alert("No data to copy");
+    return;
+  }
+
+  let text = "email\tresult\treason\tcode\tfree_email\trole\n";
+
+  latestResults.forEach(item => {
+    const d = item.debounce;
+
+    text += [
+      d.email,
+      d.result,
+      d.reason,
+      d.code,
+      d.free_email,
+      d.role
+    ].join("\t") + "\n";
+  });
+
+  navigator.clipboard.writeText(text);
+
+  alert("Copied! Paste into Excel ✅");
+}
+
+// CSV
+async function downloadCSV() {
+  const res = await fetch("/download-csv", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(latestResults)
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "emails.csv";
+  a.click();
+}
+
+// JSON
+async function downloadJSON() {
+  const res = await fetch("/download-json", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(latestResults)
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "emails.json";
+  a.click();
+}
+</script>
+
+</body>
+</html>
