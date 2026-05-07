@@ -2,94 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Validator Pro</title>
   <style>
-    :root {
-      --primary: #2563eb;
-      --bg: #f8fafc;
-      --text: #1e293b;
-    }
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      padding: 40px; 
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-    .container { max-width: 1000px; margin: 0 auto; }
-    h2 { color: var(--primary); margin-bottom: 20px; }
-    
-    textarea { 
-      width: 100%; 
-      height: 150px; 
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 14px;
-      box-sizing: border-box;
-      margin-bottom: 20px;
-    }
-    
-    .button-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-    button { 
-      padding: 10px 20px; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer; 
-      font-weight: 600; 
-      transition: opacity 0.2s;
-    }
+    :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
+    body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: var(--bg); color: var(--text); }
+    .container { max-width: 1100px; margin: 0 auto; }
+    textarea { width: 100%; height: 150px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px; }
+    .button-group { display: flex; gap: 10px; margin-bottom: 30px; }
+    button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-check { background: var(--primary); color: white; }
     .btn-excel { background: #16a34a; color: white; }
     .btn-download { background: #64748b; color: white; }
-    button:hover { opacity: 0.9; }
-
-    #invalid-section { margin-bottom: 20px; }
-    .invalid-tag { 
-      display: inline-block;
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 2px 8px;
-      border-radius: 4px;
-      margin: 2px;
-      font-size: 12px;
-    }
-
-    table { 
-      width: 100%;
-      border-collapse: collapse; 
-      background: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    td, th { border: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 14px; }
-    th { background: #f1f5f9; font-weight: 700; color: #475569; }
-    tr:nth-child(even) { background: #f8fafc; }
-    
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+    td, th { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+    th { background: #f1f5f9; }
     .status-safe { color: #16a34a; font-weight: bold; }
     .status-invalid { color: #dc2626; font-weight: bold; }
     .status-error { color: #94a3b8; font-style: italic; }
+    .suggestion { color: var(--primary); font-size: 0.85em; display: block; margin-top: 4px; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h2>Bulk Email Validator</h2>
-
-  <textarea id="emails" placeholder="Paste your email list here (one per line)..."></textarea>
+  <textarea id="emails" placeholder="Paste emails here..."></textarea>
 
   <div class="button-group">
     <button class="btn-check" onclick="checkEmails()">Validate List</button>
     <button class="btn-excel" onclick="copyForExcel()">📋 Copy for Excel</button>
-    <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
-    <button class="btn-download" onclick="downloadJSON()">Download JSON</button>
-  </div>
-
-  <div id="invalid-section">
-    <h4 id="invalid-count"></h4>
-    <div id="invalid-list"></div>
+    <button class="btn-download" onclick="downloadCSV()">CSV</button>
+    <button class="btn-download" onclick="downloadJSON()">JSON</button>
   </div>
 
   <table id="resultsTable">
@@ -103,8 +46,7 @@
         <th>Country</th>
       </tr>
     </thead>
-    <tbody>
-      </tbody>
+    <tbody></tbody>
   </table>
 </div>
 
@@ -113,12 +55,10 @@ let latestResults = [];
 
 async function checkEmails() {
   const emailInput = document.getElementById("emails").value;
-  const checkBtn = document.querySelector(".btn-check");
+  const btn = document.querySelector(".btn-check");
+  if (!emailInput.trim()) return alert("Enter emails.");
 
-  if (!emailInput.trim()) return alert("Please enter some emails.");
-
-  checkBtn.innerText = "Processing...";
-  checkBtn.disabled = true;
+  btn.innerText = "Processing..."; btn.disabled = true;
 
   try {
     const res = await fetch("/bulk-check", {
@@ -126,113 +66,54 @@ async function checkEmails() {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ emails: emailInput })
     });
-
     const data = await res.json();
     latestResults = data.results;
-
     renderTable(data.results);
-    showInvalid(data.invalidEmails);
-  } catch (err) {
-    console.error("Fetch Error:", err);
-    alert("Connection to server failed.");
-  } finally {
-    checkBtn.innerText = "Validate List";
-    checkBtn.disabled = false;
-  }
+  } catch (err) { alert("Server error."); }
+  finally { btn.innerText = "Validate List"; btn.disabled = false; }
 }
 
 function renderTable(data) {
   const tbody = document.querySelector("#resultsTable tbody");
-  tbody.innerHTML = "";
-
-  data.forEach(item => {
-    // Determine status class for styling
-    let statusClass = "";
-    if (item.result === "Safe to Send") statusClass = "status-safe";
-    else if (item.result === "Invalid") statusClass = "status-invalid";
-    else if (item.result === "error") statusClass = "status-error";
-
-    const row = `
+  tbody.innerHTML = data.map(item => {
+    let statusClass = item.result === "Safe to Send" ? "status-safe" : (item.result === "Invalid" ? "status-invalid" : "status-error");
+    return `
       <tr>
-        <td>${item.email || "N/A"}</td>
-        <td class="${statusClass}">${item.result || "Unknown"}</td>
+        <td>
+          ${item.email}
+          ${item.did_you_mean ? `<span class="suggestion">Mean: ${item.did_you_mean}?</span>` : ""}
+        </td>
+        <td class="${statusClass}">${item.result}</td>
         <td>${item.reason || "-"}</td>
         <td>${item.free_email === "true" ? "Yes" : "No"}</td>
         <td>${item.role === "true" ? "Yes" : "No"}</td>
-        <td>${item.country || item.location || "N/A"}</td>
+        <td>${item.country || "N/A"}</td>
       </tr>
     `;
-    tbody.innerHTML += row;
-  });
-}
-
-function showInvalid(invalids) {
-  const listDiv = document.getElementById("invalid-list");
-  const countH4 = document.getElementById("invalid-count");
-  
-  listDiv.innerHTML = "";
-  countH4.innerText = invalids.length > 0 ? `Malformed Emails (${invalids.length}):` : "";
-
-  invalids.forEach(e => {
-    listDiv.innerHTML += `<span class="invalid-tag">${e}</span>`;
-  });
+  }).join("");
 }
 
 function copyForExcel() {
-  if (!latestResults.length) return alert("No data to copy.");
-
-  // Define column headers
-  const headers = ["email", "result", "reason", "code", "free_email", "role", "country"];
-  let tsvContent = headers.join("\t") + "\n";
-
+  if (!latestResults.length) return alert("No data.");
+  const headers = ["email", "result", "reason", "country", "did_you_mean"];
+  let tsv = headers.join("\t") + "\n";
   latestResults.forEach(item => {
-    const row = headers.map(h => {
-      // Handle country/location aliases
-      if (h === "country") return item.country || item.location || "";
-      return item[h] || "";
-    });
-    tsvContent += row.join("\t") + "\n";
+    tsv += headers.map(h => item[h] || "N/A").join("\t") + "\n";
   });
-
-  navigator.clipboard.writeText(tsvContent).then(() => {
-    alert("Data copied to clipboard! You can now paste (Ctrl+V) into Excel.");
-  });
+  navigator.clipboard.writeText(tsv).then(() => alert("Copied for Excel! ✅"));
 }
 
 async function downloadCSV() {
-  if (!latestResults.length) return alert("No data to download.");
-  
-  const res = await fetch("/download-csv", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(latestResults)
-  });
-
+  const res = await fetch("/download-csv", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(latestResults) });
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `email_report_${new Date().getTime()}.csv`;
-  a.click();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "emails.csv"; a.click();
 }
 
 async function downloadJSON() {
-  if (!latestResults.length) return alert("No data to download.");
-  
-  const res = await fetch("/download-json", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(latestResults)
-  });
-
+  const res = await fetch("/download-json", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(latestResults) });
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `email_report_${new Date().getTime()}.json`;
-  a.click();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "emails.json"; a.click();
 }
 </script>
-
 </body>
 </html>
