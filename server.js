@@ -21,7 +21,7 @@ if (!API_KEY) {
 // ✅ Axios instance (better control)
 const api = axios.create({
   baseURL: "https://api.debounce.io/v1/",
-  timeout: 8000
+  timeout: 15000
 });
 
 // ✅ Email cleaner
@@ -91,58 +91,37 @@ async function processBatch(emails, limit = 5) {
 }
 
 // ✅ BULK CHECK
+// ✅ 1. UPDATE BULK-CHECK (Flatten the object)
 app.post("/bulk-check", async (req, res) => {
   try {
     let { emails } = req.body;
-
     emails = cleanEmails(emails);
-
     const validEmails = emails.filter(isValidEmail);
-    const invalidEmails = emails.filter(e => !isValidEmail(e));
 
-    if (validEmails.length === 0) {
-      return res.json({
-        results: [],
-        invalidEmails
-      });
-    }
+    const rawResults = await processBatch(validEmails, 5);
 
-    // ⚡ process with concurrency (FAST but controlled)
-    const results = await processBatch(validEmails, 5);
-
-    res.json({
-      results,
-      invalidEmails
+    // Flattening ensures "country", "location", etc. are preserved at the top level
+    const flattenedResults = rawResults.map(item => {
+      return item.debounce ? { ...item.debounce } : { email: "Error", result: "api_fail" };
     });
 
+    res.json({ results: flattenedResults, invalidEmails: emails.filter(e => !isValidEmail(e)) });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Bulk check failed",
-      details: err.message
-    });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ CSV DOWNLOAD
+// ✅ 2. UPDATE CSV DOWNLOAD (Let the parser handle headers)
 app.post("/download-csv", (req, res) => {
   try {
-    const formatted = req.body.map(item => ({
-      email: item?.debounce?.email || "",
-      result: item?.debounce?.result || "",
-      reason: item?.debounce?.reason || "",
-      code: item?.debounce?.code || "",
-      free_email: item?.debounce?.free_email || "",
-      role: item?.debounce?.role || ""
-    }));
+    const data = req.body; // Expecting the flattened array from bulk-check
 
-    const parser = new Parser();
-    const csv = parser.parse(formatted);
+    const parser = new Parser(); 
+    const csv = parser.parse(data); // This automatically creates columns for EVERY field (including Brazil/Country)
 
     res.header("Content-Type", "text/csv");
-    res.attachment("emails.csv");
+    res.attachment("verified_emails.csv");
     res.send(csv);
-
   } catch (err) {
     res.status(500).json({ error: "CSV generation failed" });
   }

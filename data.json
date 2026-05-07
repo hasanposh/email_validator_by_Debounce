@@ -1,0 +1,68 @@
+[
+    {
+        "email": "contacto@deltamexico.com",
+        "code": "6",
+        "role": "true",
+        "free_email": "false",
+        "result": "Invalid",
+        "reason": "Bounce, Role",
+        "send_transactional": "0",
+        "did_you_mean": ""
+    },
+    {
+        "email": "ventas@flyacross.com.mx",
+        "code": "4",
+        "role": "true",
+        "free_email": "false",
+        "result": "Risky",
+        "reason": "Accept All, Role",
+        "send_transactional": "1",
+        "did_you_mean": "ventas@flyacross.com.au"
+    },
+    {
+        "email": "info@helicopteros.mx",
+        "result": "error",
+        "reason": "timeout of 8000ms exceeded",
+        "code": null,
+        "free_email": null,
+        "role": null
+    },
+    {
+        "email": "m.nunez@siasaair.com.mx",
+        "result": "error",
+        "reason": "timeout of 8000ms exceeded",
+        "code": null,
+        "free_email": null,
+        "role": null
+    },
+    {
+        "email": "direccion@tornadoadiestramiento.com.mx",
+        "code": "5",
+        "role": "true",
+        "free_email": "false",
+        "result": "Risky",
+        "reason": "Deliverable, Role",
+        "send_transactional": "1",
+        "did_you_mean": "direccion@tornadoadiestramiento.com.au"
+    },
+    {
+        "email": "contacto@cabbajio.com",
+        "code": "5",
+        "role": "true",
+        "free_email": "false",
+        "result": "Risky",
+        "reason": "Deliverable, Role",
+        "send_transactional": "1",
+        "did_you_mean": ""
+    },
+    {
+        "email": "training.cca@airbus.com",
+        "code": "5",
+        "role": "false",
+        "free_email": "false",
+        "result": "Safe to Send",
+        "reason": "Deliverable",
+        "send_transactional": "1",
+        "did_you_mean": ""
+    }
+]
